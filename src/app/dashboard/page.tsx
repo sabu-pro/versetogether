@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
@@ -10,9 +11,11 @@ import { getResponsibleProfile, isWeekend, prettyDate, todayString } from "@/lib
 import { DailyVerse, Reflection } from "@/types";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { profile, profiles } = useAuth();
   const [verse, setVerse] = useState<DailyVerse | null>(null);
   const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [error, setError] = useState("");
 
   const responsible = getResponsibleProfile(profiles);
   const myTurn = responsible?.id === profile?.id;
@@ -39,6 +42,33 @@ export default function DashboardPage() {
   useEffect(() => { load(); }, []);
 
   const hasMyReflection = reflections.some((r) => r.user_id === profile?.id);
+  const canManageVerse = Boolean(profile && verse && verse.submitted_by === profile.id);
+
+  async function handleDeleteVerse() {
+    if (!verse || !profile) return;
+    if (verse.submitted_by !== profile.id) {
+      setError("You can only delete verses you submitted.");
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this verse and its reflections?");
+    if (!confirmed) return;
+
+    setError("");
+
+    try {
+      await supabase.from("reflections").delete().eq("verse_id", verse.id);
+      const { error: deleteError } = await supabase.from("daily_verses").delete().eq("id", verse.id);
+      if (deleteError) {
+        setError(deleteError.message || "Unable to delete this verse right now.");
+        return;
+      }
+      router.refresh();
+      router.push("/dashboard");
+    } catch (deleteFailure) {
+      setError("Unable to delete this verse right now.");
+    }
+  }
 
   return (
     <AppShell>
@@ -66,6 +96,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {error && <p className="card mb-5 bg-rose-50 text-rose-700">{error}</p>}
 
       {!verse ? (
         <section className="card text-center">
@@ -102,9 +134,21 @@ export default function DashboardPage() {
               <p className="mt-1 whitespace-pre-line text-rose-700">{verse.prayer_note}</p>
             </div>
           )}
-          <Link href={`/reflection/${verse.id}`} className="btn-primary mt-5 inline-block">
-            {hasMyReflection ? "View Reflections" : "Write Your Reflection"}
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href={`/reflection/${verse.id}`} className="btn-primary inline-block">
+              {hasMyReflection ? "View Reflections" : "Write Your Reflection"}
+            </Link>
+            {canManageVerse && (
+              <>
+                <Link href={`/edit-verse/${verse.id}`} className="btn-secondary inline-block">
+                  Edit Verse
+                </Link>
+                <button type="button" onClick={handleDeleteVerse} className="btn-secondary inline-block">
+                  Delete Verse
+                </button>
+              </>
+            )}
+          </div>
         </section>
       )}
 
