@@ -47,20 +47,30 @@ export default function DashboardPage() {
         subtitle={prettyDate(new Date())}
       />
 
-      <section className="card mb-5 bg-sage-50">
-        <p className="text-sm text-sage-600">Today's responsibility</p>
-        {isWeekend() ? (
-          <h2 className="mt-1 text-xl font-bold text-sage-900">Weekend rest day, optional sharing</h2>
-        ) : (
-          <h2 className="mt-1 text-xl font-bold text-sage-900">
-            {myTurn ? "It is your turn to share God’s Word" : `${responsible?.name || "Your partner"} will share today`}
-          </h2>
-        )}
+      <section className="soft-card mb-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="badge-pill">Today’s responsibility</p>
+            {isWeekend() ? (
+              <h2 className="mt-3 text-xl font-bold text-sage-900">Weekend rest day, optional sharing</h2>
+            ) : (
+              <h2 className="mt-3 text-xl font-bold text-sage-900">
+                {myTurn ? "It is your turn to share God’s Word" : `${responsible?.name || "Your partner"} will share today`}
+              </h2>
+            )}
+            <p className="mt-2 text-sm text-sage-600">A calm, simple rhythm for reflection and prayer.</p>
+          </div>
+          <div className="rounded-2xl bg-white/90 px-3 py-2 text-right shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-sage-500">Focus</p>
+            <p className="text-sm font-semibold text-sage-800">Peace & prayer</p>
+          </div>
+        </div>
       </section>
 
       {!verse ? (
         <section className="card text-center">
-          <h2 className="text-2xl font-bold text-sage-900">No verse shared yet</h2>
+          <p className="badge-pill">No verse shared yet</p>
+          <h2 className="mt-3 text-2xl font-bold text-sage-900">A quiet space for today’s Word</h2>
           <p className="mt-2 text-sage-600">
             {myTurn || isWeekend()
               ? "Share today’s verse, reflection, and optional prayer note."
@@ -74,10 +84,11 @@ export default function DashboardPage() {
         </section>
       ) : (
         <section className="card">
-          <p className="text-sm text-sage-500">
-            Shared by {verse.submitted_by_profile?.name || "Partner"}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-sage-900">{verse.bible_reference}</h2>
+          <div className="flex items-center justify-between gap-3">
+            <p className="badge-pill">Shared by {verse.submitted_by_profile?.name || "Partner"}</p>
+            <span className="rounded-full bg-sage-50 px-3 py-1 text-xs font-semibold text-sage-700">Today</span>
+          </div>
+          <h2 className="mt-3 text-2xl font-bold text-sage-900">{verse.bible_reference}</h2>
           <p className="mt-4 whitespace-pre-line text-lg italic leading-8 text-sage-800">
             “{verse.verse_text}”
           </p>

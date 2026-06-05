@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
+import { sendPushNotification } from "@/lib/push";
 import { supabase } from "@/lib/supabase";
 import { DailyVerse, Reflection } from "@/types";
 
@@ -65,6 +66,12 @@ export default function ReflectionPage() {
         message: "Your partner has read and reflected on today’s verse.",
         link: `/reflection/${verseId}`
       });
+      await sendPushNotification(
+        partner.id,
+        `${profile.name} completed today’s reflection`,
+        "Your partner has read and reflected on today’s verse.",
+        `/reflection/${verseId}`
+      );
     }
 
     setBusy(false);

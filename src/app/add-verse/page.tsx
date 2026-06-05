@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { sendPushNotification } from "@/lib/push";
 import { getResponsibleProfile, isWeekend, todayString } from "@/lib/utils";
 
 export default function AddVersePage() {
@@ -60,6 +61,12 @@ export default function AddVersePage() {
         message: "Please read and write your reflection.",
         link: `/reflection/${verse.id}`
       });
+      await sendPushNotification(
+        partner.id,
+        `${profile.name} shared today’s Bible verse`,
+        "Please read and write your reflection.",
+        `/reflection/${verse.id}`
+      );
     }
 
     setBusy(false);

@@ -60,12 +60,23 @@ create table if not exists public.app_notifications (
   created_at timestamptz default now()
 );
 
+create table if not exists public.push_subscriptions (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.daily_verses enable row level security;
 alter table public.reflections enable row level security;
 alter table public.prayer_requests enable row level security;
 alter table public.weekly_goals enable row level security;
 alter table public.app_notifications enable row level security;
+alter table public.push_subscriptions enable row level security;
 
 drop policy if exists "profiles_select" on public.profiles;
 drop policy if exists "profiles_insert" on public.profiles;
@@ -85,6 +96,10 @@ drop policy if exists "goals_update" on public.weekly_goals;
 drop policy if exists "notifications_select" on public.app_notifications;
 drop policy if exists "notifications_insert" on public.app_notifications;
 drop policy if exists "notifications_update" on public.app_notifications;
+drop policy if exists "push_subscriptions_select" on public.push_subscriptions;
+drop policy if exists "push_subscriptions_insert" on public.push_subscriptions;
+drop policy if exists "push_subscriptions_update" on public.push_subscriptions;
+drop policy if exists "push_subscriptions_delete" on public.push_subscriptions;
 
 create policy "profiles_select" on public.profiles for select using (auth.role() = 'authenticated');
 create policy "profiles_insert" on public.profiles for insert with check (auth.uid() = id);
@@ -110,7 +125,13 @@ create policy "notifications_select" on public.app_notifications for select usin
 create policy "notifications_insert" on public.app_notifications for insert with check (auth.role() = 'authenticated');
 create policy "notifications_update" on public.app_notifications for update using (auth.uid() = user_id);
 
+create policy "push_subscriptions_select" on public.push_subscriptions for select using (auth.uid() = user_id);
+create policy "push_subscriptions_insert" on public.push_subscriptions for insert with check (auth.uid() = user_id);
+create policy "push_subscriptions_update" on public.push_subscriptions for update using (auth.uid() = user_id);
+create policy "push_subscriptions_delete" on public.push_subscriptions for delete using (auth.uid() = user_id);
+
 create index if not exists idx_daily_verses_date on public.daily_verses(verse_date desc);
 create index if not exists idx_reflections_verse on public.reflections(verse_id);
 create index if not exists idx_prayers_user on public.prayer_requests(user_id);
 create index if not exists idx_notifications_user on public.app_notifications(user_id, is_read);
+create index if not exists idx_push_subscriptions_user on public.push_subscriptions(user_id, endpoint);
