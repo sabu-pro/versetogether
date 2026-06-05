@@ -120,7 +120,7 @@ export default function EditVersePage() {
             <textarea className="textarea min-h-24" value={prayerNote} onChange={(e) => setPrayerNote(e.target.value)} />
           </div>
 
-          <button className="btn-primary w-full" disabled={busy}>
+          <button className="btn btn-primary w-full" disabled={busy}>
             {busy ? "Saving..." : "Save Changes"}
           </button>
         </form>

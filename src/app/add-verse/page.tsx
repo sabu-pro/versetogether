@@ -100,7 +100,7 @@ export default function AddVersePage() {
           <textarea className="textarea min-h-24" placeholder="Write a small prayer or encouragement" value={prayerNote} onChange={(e) => setPrayerNote(e.target.value)} />
         </div>
 
-        <button className="btn-primary w-full" disabled={busy}>
+        <button className="btn btn-primary w-full" disabled={busy}>
           {busy ? "Sharing..." : "Share Verse"}
         </button>
       </form>

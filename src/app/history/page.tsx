@@ -82,8 +82,8 @@ export default function HistoryPage() {
               </Link>
               {canManageVerse && (
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href={`/edit-verse/${verse.id}`} className="btn-secondary inline-block">Edit Verse</Link>
-                  <button type="button" onClick={() => handleDelete(verse)} className="btn-secondary inline-block">Delete Verse</button>
+                  <Link href={`/edit-verse/${verse.id}`} className="btn btn-secondary inline-block">Edit Verse</Link>
+                  <button type="button" onClick={() => handleDelete(verse)} className="btn btn-secondary inline-block">Delete Verse</button>
                 </div>
               )}
             </article>

@@ -117,10 +117,10 @@ export default function SettingsPage() {
         <p className="mt-2 text-sage-700">
           This app includes in-app notifications. Browser push notifications on iPhone depend on iOS support and user permission.
         </p>
-        <button onClick={enableNotifications} className="btn-secondary mt-4">
+        <button onClick={enableNotifications} className="btn btn-secondary mt-4">
           Enable Browser Notification
         </button>
-        <button onClick={enablePushSubscription} className="btn-primary mt-3" disabled={pushBusy}>
+        <button onClick={enablePushSubscription} className="btn btn-primary mt-3" disabled={pushBusy}>
           {pushBusy ? "Subscribing..." : "Enable Web Push"}
         </button>
         <p className="mt-2 text-sm text-sage-500">Status: {permission}</p>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
         </ol>
       </section>
 
-      <button onClick={signOut} className="btn-primary w-full">Logout</button>
+      <button onClick={signOut} className="btn btn-primary w-full">Logout</button>
     </AppShell>
   );
 }

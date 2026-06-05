@@ -127,7 +127,7 @@ export default function ReflectionPage() {
             <input type="checkbox" checked={prayed} onChange={(e) => setPrayed(e.target.checked)} />
             <span>I prayed about this</span>
           </label>
-          <button className="btn-primary w-full" disabled={busy}>
+          <button className="btn btn-primary w-full" disabled={busy}>
             {busy ? "Saving..." : "Submit Reflection"}
           </button>
         </form>

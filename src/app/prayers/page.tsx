@@ -42,7 +42,7 @@ export default function PrayersPage() {
 
       <form onSubmit={addPrayer} className="card mb-5 space-y-3">
         <textarea className="textarea min-h-24" placeholder="Add a prayer request..." value={text} onChange={(e) => setText(e.target.value)} required />
-        <button className="btn-primary w-full">Add Prayer</button>
+        <button className="btn btn-primary w-full">Add Prayer</button>
       </form>
 
       <div className="space-y-4">
@@ -53,7 +53,7 @@ export default function PrayersPage() {
             {p.is_answered ? (
               <p className="mt-3 text-sm font-semibold text-sage-700">Answered {p.answered_at ? prettyDate(p.answered_at) : ""}</p>
             ) : (
-              <button onClick={() => markAnswered(p.id)} className="btn-secondary mt-4">Mark Answered</button>
+              <button onClick={() => markAnswered(p.id)} className="btn btn-secondary mt-4">Mark Answered</button>
             )}
           </div>
         ))}

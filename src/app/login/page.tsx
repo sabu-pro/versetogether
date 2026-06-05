@@ -37,7 +37,7 @@ export default function LoginPage() {
         {error && <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
         <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button className="btn-primary w-full" disabled={busy}>
+        <button className="btn btn-primary w-full" disabled={busy}>
           {busy ? "Logging in..." : "Login"}
         </button>
       </form>

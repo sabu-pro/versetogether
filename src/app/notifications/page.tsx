@@ -41,8 +41,8 @@ export default function NotificationsPage() {
             <h2 className="mt-1 text-xl font-bold">{n.title}</h2>
             <p className="mt-1 text-sage-700">{n.message}</p>
             <div className="mt-4 flex gap-3">
-              {n.link && <Link className="btn-primary" href={n.link}>Open</Link>}
-              {!n.is_read && <button className="btn-secondary" onClick={() => markRead(n.id)}>Mark read</button>}
+              {n.link && <Link className="btn btn-primary" href={n.link}>Open</Link>}
+              {!n.is_read && <button className="btn btn-secondary" onClick={() => markRead(n.id)}>Mark read</button>}
             </div>
           </div>
         ))}

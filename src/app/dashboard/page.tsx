@@ -109,7 +109,7 @@ export default function DashboardPage() {
               : `Waiting for ${responsible?.name || "your partner"} to share.`}
           </p>
           {(myTurn || isWeekend()) && (
-            <Link href="/add-verse" className="btn-primary mt-5 inline-block">
+            <Link href="/add-verse" className="btn btn-primary mt-5 inline-block">
               Add Today’s Verse
             </Link>
           )}
@@ -135,15 +135,15 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={`/reflection/${verse.id}`} className="btn-primary inline-block">
+            <Link href={`/reflection/${verse.id}`} className="btn btn-primary inline-block">
               {hasMyReflection ? "View Reflections" : "Write Your Reflection"}
             </Link>
             {canManageVerse && (
               <>
-                <Link href={`/edit-verse/${verse.id}`} className="btn-secondary inline-block">
+                <Link href={`/edit-verse/${verse.id}`} className="btn btn-secondary inline-block">
                   Edit Verse
                 </Link>
-                <button type="button" onClick={handleDeleteVerse} className="btn-secondary inline-block">
+                <button type="button" onClick={handleDeleteVerse} className="btn btn-secondary inline-block">
                   Delete Verse
                 </button>
               </>

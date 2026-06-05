@@ -18,7 +18,7 @@ export default function Nav() {
 
   return (
     <nav className="fixed bottom-3 left-1/2 z-20 w-[calc(100%-1rem)] max-w-xl -translate-x-1/2">
-      <div className="rounded-[28px] border border-sage-100 bg-white/90 p-2 shadow-[0_18px_35px_-22px_rgba(47,58,38,0.45)] backdrop-blur-xl">
+      <div className="rounded-[28px] border border-rose-100 bg-[#fff7fa] p-2 shadow-[0_14px_24px_-14px_rgba(80,48,63,0.35)]">
         <div className="grid grid-cols-6 gap-1">
           {items.map((item) => {
             const Icon = item.icon;
@@ -27,10 +27,10 @@ export default function Nav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center rounded-2xl px-1 py-2 text-[11px] font-semibold transition ${
+                className={`flex min-h-[52px] flex-col items-center rounded-[18px] border px-1 py-2 text-[11px] font-semibold text-[#111111] transition duration-200 ease-out ${
                   active
-                    ? "bg-sage-700 text-white shadow-sm"
-                    : "text-sage-600 hover:bg-sage-50 hover:text-sage-800"
+                    ? "border-[#e3b8c9] bg-[#f5d7e4] shadow-[0_10px_18px_-14px_rgba(80,48,63,0.35)]"
+                    : "border-transparent hover:border-[#ead3de] hover:bg-[#fff1f6]"
                 }`}
               >
                 <Icon size={18} className={active ? "mb-0.5" : "mb-0.5 opacity-90"} />
