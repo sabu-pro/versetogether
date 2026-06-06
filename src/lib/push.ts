@@ -50,12 +50,17 @@ export async function savePushSubscription(subscription: PushSubscription, userA
 
 export async function sendPushNotification(userId: string, title: string, message: string, url = "/dashboard") {
   try {
-    await fetch("/api/push/send", {
+    const response = await fetch("/api/send-push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, title, message, url })
     });
+
+    const data = await response.json().catch(() => ({}));
+    console.log("Push send response", { status: response.status, data });
+    return data;
   } catch (error) {
     console.error("Push notification failed", error);
+    return { ok: false, error };
   }
 }

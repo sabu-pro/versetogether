@@ -61,12 +61,18 @@ export default function AddVersePage() {
         message: "Please read and write your reflection.",
         link: `/reflection/${verse.id}`
       });
-      await sendPushNotification(
-        partner.id,
-        `${profile.name} shared today’s Bible verse`,
-        "Please read and write your reflection.",
-        `/reflection/${verse.id}`
-      );
+
+      try {
+        const pushResponse = await sendPushNotification(
+          partner.id,
+          `${profile.name} shared today’s Bible verse`,
+          "Please read and write your reflection.",
+          `/reflection/${verse.id}`
+        );
+        console.log("Push send response from add-verse", pushResponse);
+      } catch (pushError) {
+        console.error("Push send failed from add-verse", pushError);
+      }
     }
 
     setBusy(false);
