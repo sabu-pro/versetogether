@@ -1,7 +1,12 @@
 self.__WB_MANIFEST;
 
-self.skipWaiting();
-self.clientsClaim();
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener('push', (event) => {
   const payload = event.data?.json() || {
