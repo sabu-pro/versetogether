@@ -116,9 +116,9 @@ export default function SettingsPage() {
         .upsert(
           {
             user_id: sessionUserId,
-            endpoint: subscriptionPayload.endpoint,
-            p256dh: subscriptionPayload.keys?.p256dh || "",
-            auth: subscriptionPayload.keys?.auth || "",
+            endpoint: subscriptionPayload.endpoint || "",
+            subscription: subscriptionPayload,
+            user_agent: navigator.userAgent || "",
             updated_at: new Date().toISOString()
           },
           { onConflict: "endpoint" }

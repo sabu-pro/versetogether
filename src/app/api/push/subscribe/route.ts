@@ -10,10 +10,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const endpoint = body?.endpoint;
-  const keys = body?.keys;
+  const subscription = body?.subscription || body;
+  const endpoint = subscription?.endpoint;
 
-  if (!endpoint || !keys?.p256dh || !keys?.auth) {
+  if (!endpoint || !subscription) {
     return NextResponse.json({ error: "Missing subscription details" }, { status: 400 });
   }
 
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
       {
         user_id: user.id,
         endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
+        subscription,
+        user_agent: body?.user_agent || "",
         updated_at: new Date().toISOString()
       },
       { onConflict: "endpoint" }
