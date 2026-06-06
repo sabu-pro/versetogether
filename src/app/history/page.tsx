@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -40,15 +41,33 @@ export default function HistoryPage() {
     setError("");
 
     try {
-      await supabase.from("reflections").delete().eq("verse_id", verse.id);
-      const { error: deleteError } = await supabase.from("daily_verses").delete().eq("id", verse.id);
+      const { error: reflectionsError } = await supabase
+        .from("reflections")
+        .delete()
+        .eq("verse_id", verse.id);
+
+      if (reflectionsError) {
+        console.error("Delete verse failed while removing reflections", reflectionsError);
+        setError(reflectionsError.message || "Unable to delete this verse right now.");
+        return;
+      }
+
+      const { error: deleteError } = await supabase
+        .from("daily_verses")
+        .delete()
+        .eq("id", verse.id)
+        .eq("submitted_by", profile.id);
+
       if (deleteError) {
+        console.error("Delete verse failed", deleteError);
         setError(deleteError.message || "Unable to delete this verse right now.");
         return;
       }
+
       setVerses((current) => current.filter((item) => item.id !== verse.id));
       router.refresh();
     } catch (deleteFailure) {
+      console.error("Delete verse failed unexpectedly", deleteFailure);
       setError("Unable to delete this verse right now.");
     }
   }
@@ -75,17 +94,34 @@ export default function HistoryPage() {
           const canManageVerse = Boolean(profile && verse.submitted_by === profile.id);
           return (
             <article key={verse.id} className="card">
-              <Link href={`/reflection/${verse.id}`} className="block">
-                <p className="text-sm text-sage-500">{prettyDate(verse.verse_date)} • {verse.submitted_by_profile?.name}</p>
-                <h2 className="mt-2 text-xl font-bold text-sage-900">{verse.bible_reference}</h2>
-                <p className="mt-2 line-clamp-3 italic text-sage-700">“{verse.verse_text}”</p>
-              </Link>
-              {canManageVerse && (
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href={`/edit-verse/${verse.id}`} className="btn btn-secondary inline-block">Edit Verse</Link>
-                  <button type="button" onClick={() => handleDelete(verse)} className="btn btn-secondary inline-block">Delete Verse</button>
-                </div>
-              )}
+              <div className="flex items-start justify-between gap-3">
+                <Link href={`/reflection/${verse.id}`} className="block flex-1">
+                  <p className="text-sm text-sage-500">{prettyDate(verse.verse_date)} • {verse.submitted_by_profile?.name}</p>
+                  <h2 className="mt-2 text-xl font-bold text-sage-900">{verse.bible_reference}</h2>
+                  <p className="mt-2 line-clamp-3 italic text-sage-700">“{verse.verse_text}”</p>
+                </Link>
+                {canManageVerse && (
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/edit-verse/${verse.id}`}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-100 bg-white/90 text-[#111111] shadow-sm transition hover:bg-[#fff1f6]"
+                      aria-label="Edit verse"
+                      title="Edit verse"
+                    >
+                      <Pencil size={16} />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(verse)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-100 bg-white/90 text-[#111111] shadow-sm transition hover:bg-[#fff1f6]"
+                      aria-label="Delete verse"
+                      title="Delete verse"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </article>
           );
         })}
