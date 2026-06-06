@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
+import { cleanupVerseNotifications } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase";
 import { prettyDate } from "@/lib/utils";
 import { DailyVerse } from "@/types";
@@ -50,6 +51,12 @@ export default function HistoryPage() {
         console.error("Delete verse failed while removing reflections", reflectionsError);
         setError(reflectionsError.message || "Unable to delete this verse right now.");
         return;
+      }
+
+      try {
+        await cleanupVerseNotifications(verse.id);
+      } catch (notificationError) {
+        console.error("Delete verse cleanup failed", notificationError);
       }
 
       const { error: deleteError } = await supabase

@@ -8,6 +8,7 @@ import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { cleanupVerseNotifications } from "@/lib/notifications";
 import { getResponsibleProfile, isWeekend, prettyDate, todayString } from "@/lib/utils";
 import { DailyVerse, Reflection } from "@/types";
 
@@ -67,6 +68,12 @@ export default function DashboardPage() {
         console.error("Delete verse failed while removing reflections", reflectionsError);
         setError(reflectionsError.message || "Unable to delete this verse right now.");
         return;
+      }
+
+      try {
+        await cleanupVerseNotifications(verse.id);
+      } catch (notificationError) {
+        console.error("Delete verse cleanup failed", notificationError);
       }
 
       const { error: deleteError } = await supabase

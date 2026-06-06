@@ -96,6 +96,7 @@ drop policy if exists "goals_update" on public.weekly_goals;
 drop policy if exists "notifications_select" on public.app_notifications;
 drop policy if exists "notifications_insert" on public.app_notifications;
 drop policy if exists "notifications_update" on public.app_notifications;
+drop policy if exists "notifications_delete" on public.app_notifications;
 drop policy if exists "push_subscriptions_select" on public.push_subscriptions;
 drop policy if exists "push_subscriptions_insert" on public.push_subscriptions;
 drop policy if exists "push_subscriptions_update" on public.push_subscriptions;
@@ -124,6 +125,7 @@ create policy "goals_update" on public.weekly_goals for update using (auth.role(
 create policy "notifications_select" on public.app_notifications for select using (auth.uid() = user_id);
 create policy "notifications_insert" on public.app_notifications for insert with check (auth.role() = 'authenticated');
 create policy "notifications_update" on public.app_notifications for update using (auth.uid() = user_id);
+create policy "notifications_delete" on public.app_notifications for delete using (auth.uid() = user_id);
 
 create policy "push_subscriptions_select" on public.push_subscriptions for select using (auth.uid() = user_id);
 create policy "push_subscriptions_insert" on public.push_subscriptions for insert with check (auth.uid() = user_id);
