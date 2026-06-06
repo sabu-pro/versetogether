@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { savePushSubscription } from "@/lib/push";
 
 export default function SettingsPage() {
   const { profile, partner, signOut } = useAuth();
@@ -93,41 +93,7 @@ export default function SettingsPage() {
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       });
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Web Push subscription failed: unable to read Supabase session", sessionError);
-        throw new Error(`Unable to save push subscription: session check failed (${sessionError.message}).`);
-      }
-
-      const sessionUserId = sessionData.session?.user?.id;
-      if (!sessionData.session || !sessionUserId) {
-        console.error("Web Push subscription failed: no authenticated Supabase session found", sessionData);
-        throw new Error("Unable to save push subscription: you must be logged in before enabling Web Push.");
-      }
-
-      if (profile?.id && sessionUserId !== profile.id) {
-        console.error("Web Push subscription failed: session user does not match profile", { sessionUserId, profileId: profile.id });
-        throw new Error("Unable to save push subscription: the logged-in user does not match the current profile.");
-      }
-
-      const subscriptionPayload = subscription.toJSON();
-      const { error: upsertError } = await supabase
-        .from("push_subscriptions")
-        .upsert(
-          {
-            user_id: sessionUserId,
-            endpoint: subscriptionPayload.endpoint || "",
-            subscription: subscriptionPayload,
-            user_agent: navigator.userAgent || "",
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: "endpoint" }
-        );
-
-      if (upsertError) {
-        console.error("Web Push subscription failed: Supabase upsert error", upsertError);
-        throw new Error(`Unable to save push subscription: ${upsertError.message || "RLS insert/update failed."}`);
-      }
+      await savePushSubscription(subscription, navigator.userAgent);
 
       setPermission("granted");
       setStatusMessage("Web Push is enabled. Your browser subscription was saved to Supabase.");
