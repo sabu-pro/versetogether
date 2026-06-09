@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
@@ -7,7 +8,8 @@ import { useAuth } from "@/lib/auth";
 import { savePushSubscription } from "@/lib/push";
 
 export default function SettingsPage() {
-  const { profile, partner, signOut } = useAuth();
+  const { profile, partner, inviteCode, signOut } = useAuth();
+  const [copied, setCopied] = useState(false);
   const [permission, setPermission] = useState(
     typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
   );
@@ -153,8 +155,37 @@ export default function SettingsPage() {
 
       <section className="card mb-5">
         <p className="badge-pill">Partner</p>
-        <h2 className="mt-3 text-xl font-bold text-sage-900">{partner?.name || "Not found"}</h2>
-        <p className="mt-1 text-sage-600">{partner?.email || "Add your prayer partner in Supabase to connect this section."}</p>
+        {partner ? (
+          <>
+            <h2 className="mt-3 text-xl font-bold text-sage-900">{partner.name}</h2>
+            <p className="mt-1 text-sage-600">{partner.email}</p>
+          </>
+        ) : inviteCode ? (
+          <>
+            <h2 className="mt-3 text-xl font-bold text-sage-900">Waiting for your partner</h2>
+            <p className="mt-1 text-sage-600">Share this invite code so they can join your couple space.</p>
+            <div className="mt-4 rounded-2xl bg-sage-50 px-4 py-4 text-center">
+              <p className="text-2xl font-bold tracking-[0.18em] text-sage-900">{inviteCode}</p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary mt-4 w-full"
+              onClick={async () => {
+                await navigator.clipboard.writeText(inviteCode);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              <Copy size={16} />
+              {copied ? "Copied!" : "Copy invite code"}
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-3 text-xl font-bold text-sage-900">Not connected</h2>
+            <p className="mt-1 text-sage-600">Your partner profile could not be loaded.</p>
+          </>
+        )}
       </section>
 
       <section className="card mb-5">

@@ -9,7 +9,7 @@ import { weekStartString } from "@/lib/utils";
 import { WeeklyGoal } from "@/types";
 
 export default function GoalsPage() {
-  const { profile } = useAuth();
+  const { profile, couple } = useAuth();
   const [goal, setGoal] = useState<WeeklyGoal | null>(null);
   const [goalText, setGoalText] = useState("");
 
@@ -26,11 +26,12 @@ export default function GoalsPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !couple) return;
     await supabase.from("weekly_goals").insert({
+      couple_id: couple.id,
       week_start: weekStartString(),
       goal_text: goalText,
-      created_by: profile.id
+      created_by: profile.id,
     });
     setGoalText("");
     load();

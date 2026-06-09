@@ -9,8 +9,8 @@ export default function Home() {
         A private Bible verse, reflection, prayer, and spiritual habit app for couples.
       </p>
       <div className="mt-8 flex w-full flex-col gap-3">
-        <Link href="/login" className="btn btn-primary text-center">Login</Link>
-        <Link href="/dashboard" className="btn btn-secondary text-center">Open Dashboard</Link>
+        <Link href="/signup" className="btn btn-primary text-center">Get started</Link>
+        <Link href="/login" className="btn btn-secondary text-center">Login</Link>
       </div>
     </main>
   );

@@ -11,7 +11,7 @@ import { getResponsibleProfile, isWeekend, todayString } from "@/lib/utils";
 
 export default function AddVersePage() {
   const router = useRouter();
-  const { profile, partner, profiles } = useAuth();
+  const { profile, partner, profiles, couple } = useAuth();
   const responsible = getResponsibleProfile(profiles);
   const myTurn = responsible?.id === profile?.id;
 
@@ -24,7 +24,7 @@ export default function AddVersePage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !couple) return;
 
     if (!myTurn && !isWeekend()) {
       setError("Today is not your turn to share the main verse.");
@@ -37,13 +37,14 @@ export default function AddVersePage() {
     const { data: verse, error: verseError } = await supabase
       .from("daily_verses")
       .insert({
+        couple_id: couple.id,
         verse_date: todayString(),
         responsible_user_id: responsible?.id || profile.id,
         bible_reference: bibleReference,
         verse_text: verseText,
         main_reflection: mainReflection,
         prayer_note: prayerNote || null,
-        submitted_by: profile.id
+        submitted_by: profile.id,
       })
       .select()
       .single();

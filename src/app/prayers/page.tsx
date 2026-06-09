@@ -9,7 +9,7 @@ import { PrayerRequest } from "@/types";
 import { prettyDate } from "@/lib/utils";
 
 export default function PrayersPage() {
-  const { profile } = useAuth();
+  const { profile, couple } = useAuth();
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [text, setText] = useState("");
 
@@ -25,8 +25,12 @@ export default function PrayersPage() {
 
   async function addPrayer(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile) return;
-    await supabase.from("prayer_requests").insert({ user_id: profile.id, request_text: text });
+    if (!profile || !couple) return;
+    await supabase.from("prayer_requests").insert({
+      couple_id: couple.id,
+      user_id: profile.id,
+      request_text: text,
+    });
     setText("");
     load();
   }
