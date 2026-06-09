@@ -48,7 +48,7 @@ export default function LoginPage() {
           <BookOpen className="text-sage-700" size={38} />
         </div>
         <h1 className="text-4xl font-bold text-sage-900">VerseTogether</h1>
-        <p className="mt-2 text-sage-600">Grow in God together, one day at a time.</p>
+        <p className="mt-2 text-sage-600">Share God’s Word. Pray together. Grow together.e.</p>
       </div>
 
       <form onSubmit={submit} className="card space-y-4">
