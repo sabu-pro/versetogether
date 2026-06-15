@@ -88,6 +88,15 @@ create table if not exists public.weekly_goals (
 create unique index if not exists weekly_goals_couple_week_unique
   on public.weekly_goals (couple_id, week_start);
 
+create table if not exists public.thoughts_testimonies (
+  id uuid primary key default uuid_generate_v4(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  content text not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 -- ── Per-user data ─────────────────────────────────────────────────────────────
 
 create table if not exists public.app_notifications (
@@ -244,6 +253,7 @@ alter table public.daily_verses enable row level security;
 alter table public.reflections enable row level security;
 alter table public.prayer_requests enable row level security;
 alter table public.weekly_goals enable row level security;
+alter table public.thoughts_testimonies enable row level security;
 alter table public.app_notifications enable row level security;
 alter table public.push_subscriptions enable row level security;
 
@@ -266,6 +276,10 @@ drop policy if exists "prayers_update" on public.prayer_requests;
 drop policy if exists "goals_select" on public.weekly_goals;
 drop policy if exists "goals_insert" on public.weekly_goals;
 drop policy if exists "goals_update" on public.weekly_goals;
+drop policy if exists "thoughts_select" on public.thoughts_testimonies;
+drop policy if exists "thoughts_insert" on public.thoughts_testimonies;
+drop policy if exists "thoughts_update" on public.thoughts_testimonies;
+drop policy if exists "thoughts_delete" on public.thoughts_testimonies;
 drop policy if exists "notifications_select" on public.app_notifications;
 drop policy if exists "notifications_insert" on public.app_notifications;
 drop policy if exists "notifications_update" on public.app_notifications;
@@ -355,6 +369,27 @@ create policy "goals_insert" on public.weekly_goals
 create policy "goals_update" on public.weekly_goals
   for update using (couple_id = public.user_couple_id());
 
+create policy "thoughts_select" on public.thoughts_testimonies
+  for select using (couple_id = public.user_couple_id());
+
+create policy "thoughts_insert" on public.thoughts_testimonies
+  for insert with check (
+    auth.uid() = user_id
+    and couple_id = public.user_couple_id()
+  );
+
+create policy "thoughts_update" on public.thoughts_testimonies
+  for update using (
+    auth.uid() = user_id
+    and couple_id = public.user_couple_id()
+  );
+
+create policy "thoughts_delete" on public.thoughts_testimonies
+  for delete using (
+    auth.uid() = user_id
+    and couple_id = public.user_couple_id()
+  );
+
 create policy "notifications_select" on public.app_notifications
   for select using (auth.uid() = user_id);
 
@@ -386,5 +421,6 @@ create index if not exists idx_daily_verses_couple_date on public.daily_verses(c
 create index if not exists idx_reflections_verse on public.reflections(verse_id);
 create index if not exists idx_prayers_couple on public.prayer_requests(couple_id);
 create index if not exists idx_goals_couple on public.weekly_goals(couple_id);
+create index if not exists idx_thoughts_couple on public.thoughts_testimonies(couple_id, created_at desc);
 create index if not exists idx_notifications_user on public.app_notifications(user_id, is_read);
 create index if not exists idx_push_subscriptions_user on public.push_subscriptions(user_id, endpoint);

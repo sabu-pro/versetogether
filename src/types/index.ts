@@ -62,6 +62,16 @@ export type PrayerRequest = {
   profile?: Profile;
 };
 
+export type ThoughtTestimony = {
+  id: string;
+  couple_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  profile?: Profile;
+};
+
 export type WeeklyGoal = {
   id: string;
   couple_id: string;

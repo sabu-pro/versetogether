@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { Couple, Profile } from "@/types";
@@ -15,6 +15,7 @@ type AuthContextType = {
   inviteCode: string | null;
   needsOnboarding: boolean;
   loading: boolean;
+  profileReady: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -31,84 +32,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
-  const loadProfile = useCallback(async (userId?: string) => {
-    if (!userId) {
-      setProfile(null);
-      setPartner(null);
-      setCouple(null);
-      setProfiles([]);
-      setInviteCode(null);
-      return;
-    }
-
-    const { data: current } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
-
-    const currentProfile = (current as Profile) || null;
-    setProfile(currentProfile);
-
-    if (!currentProfile?.couple_id) {
-      setPartner(null);
-      setCouple(null);
-      setProfiles([]);
-      setInviteCode(null);
-      return;
-    }
-
-    const [{ data: coupleData }, { data: coupleProfiles }] = await Promise.all([
-      supabase.from("couples").select("*").eq("id", currentProfile.couple_id).maybeSingle(),
-      supabase
-        .from("profiles")
-        .select("*")
-        .eq("couple_id", currentProfile.couple_id)
-        .order("partner_order"),
-    ]);
-
-    const members = (coupleProfiles || []) as Profile[];
-    setCouple((coupleData as Couple) || null);
-    setProfiles(members);
-    setPartner(members.find((p) => p.id !== userId) || null);
-
-    if (members.length < 2) {
-      const { data: code } = await supabase.rpc("get_active_invite_code");
-      setInviteCode(typeof code === "string" ? code : null);
-    } else {
-      setInviteCode(null);
-    }
+  const clearCoupleState = useCallback(() => {
+    setProfile(null);
+    setPartner(null);
+    setCouple(null);
+    setProfiles([]);
+    setInviteCode(null);
   }, []);
 
-  useEffect(() => {
-    async function init() {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setUser(data.session?.user || null);
-      if (data.session?.user) await loadProfile(data.session.user.id);
-      setLoading(false);
-    }
+  const loadProfile = useCallback(async (userId: string) => {
+    setProfileLoading(true);
 
-    init();
+    try {
+      const { data: current } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user || null);
-      if (nextSession?.user) await loadProfile(nextSession.user.id);
-      else {
-        setProfile(null);
+      const currentProfile = (current as Profile) || null;
+      setProfile(currentProfile);
+
+      if (!currentProfile?.couple_id) {
         setPartner(null);
         setCouple(null);
         setProfiles([]);
         setInviteCode(null);
+        return;
       }
-      setLoading(false);
+
+      const [{ data: coupleData }, { data: coupleProfiles }] = await Promise.all([
+        supabase.from("couples").select("*").eq("id", currentProfile.couple_id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("couple_id", currentProfile.couple_id)
+          .order("partner_order"),
+      ]);
+
+      const members = (coupleProfiles || []) as Profile[];
+      setCouple((coupleData as Couple) || null);
+      setProfiles(members);
+      setPartner(members.find((p) => p.id !== userId) || null);
+
+      if (members.length < 2) {
+        const { data: code } = await supabase.rpc("get_active_invite_code");
+        setInviteCode(typeof code === "string" ? code : null);
+      } else {
+        setInviteCode(null);
+      }
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (!active) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        await loadProfile(nextSession.user.id);
+      } else {
+        clearCoupleState();
+      }
+
+      if (active) setInitialized(true);
     });
 
-    return () => listener.subscription.unsubscribe();
-  }, [loadProfile]);
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [clearCoupleState, loadProfile]);
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -124,7 +127,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }
 
-  const needsOnboarding = Boolean(user && !profile?.couple_id);
+  const profileReady = initialized && !profileLoading;
+  const loading = !initialized || profileLoading;
+  const needsOnboarding = useMemo(
+    () => profileReady && Boolean(user && !profile?.couple_id),
+    [profileReady, user, profile?.couple_id]
+  );
 
   return (
     <AuthContext.Provider
@@ -138,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         inviteCode,
         needsOnboarding,
         loading,
+        profileReady,
         signIn,
         signUp,
         signOut,

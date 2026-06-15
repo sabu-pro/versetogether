@@ -9,20 +9,23 @@ import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { cleanupVerseNotifications } from "@/lib/notifications";
-import { getResponsibleProfile, isWeekend, prettyDate, todayString } from "@/lib/utils";
+import { getResponsibleProfile, greetingWithName, isWeekend, prettyDate, todayString } from "@/lib/utils";
 import { DailyVerse, Reflection } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, profiles } = useAuth();
+  const { profile, profiles, profileReady } = useAuth();
   const [verse, setVerse] = useState<DailyVerse | null>(null);
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [error, setError] = useState("");
+  const [pageLoading, setPageLoading] = useState(true);
 
   const responsible = getResponsibleProfile(profiles);
   const myTurn = responsible?.id === profile?.id;
 
   async function load() {
+    if (!profile?.couple_id) return;
+
     const { data } = await supabase
       .from("daily_verses")
       .select("*, submitted_by_profile:profiles!daily_verses_submitted_by_fkey(*)")
@@ -38,10 +41,16 @@ export default function DashboardPage() {
         .eq("verse_id", data.id)
         .order("created_at");
       setReflections((refs || []) as Reflection[]);
+    } else {
+      setReflections([]);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!profileReady || !profile?.couple_id) return;
+    setPageLoading(true);
+    load().finally(() => setPageLoading(false));
+  }, [profileReady, profile?.couple_id]);
 
   const hasMyReflection = reflections.some((r) => r.user_id === profile?.id);
   const canManageVerse = Boolean(profile && verse && verse.submitted_by === profile.id);
@@ -101,10 +110,14 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <Header
-        title={`Good day, ${profile?.name || "friend"}`}
+        title={greetingWithName(profile?.name)}
         subtitle={prettyDate(new Date())}
       />
 
+      {pageLoading ? (
+        <section className="card text-center text-sage-600">Loading today&apos;s verse...</section>
+      ) : (
+        <>
       <section className="soft-card mb-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -116,7 +129,7 @@ export default function DashboardPage() {
                 {myTurn ? "It is your turn to share God’s Word" : `${responsible?.name || "Your partner"} will share today`}
               </h2>
             )}
-            <p className="mt-2 text-sm text-sage-600">A calm, simple rhythm for reflection and prayer.</p>
+            <p className="mt-2 text-sm text-sage-600">Growing together through prayer, reflection, and God’s Word.</p>
           </div>
           <div className="rounded-2xl bg-white/90 px-3 py-2 text-right shadow-sm">
             <p className="text-[10px] uppercase tracking-[0.18em] text-sage-500">Focus</p>
@@ -202,6 +215,8 @@ export default function DashboardPage() {
             ))}
           </div>
         </section>
+      )}
+        </>
       )}
     </AppShell>
   );

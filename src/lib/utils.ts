@@ -42,3 +42,15 @@ export function getResponsibleProfile(profiles: Profile[]) {
   const order = responsibleOrder();
   return profiles.find((p) => p.partner_order === order) || null;
 }
+
+export function timeBasedGreeting(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+export function greetingWithName(name?: string | null, date = new Date()) {
+  const label = name?.trim() || "friend";
+  return `${timeBasedGreeting(date)}, ${label}`;
+}

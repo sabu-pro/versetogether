@@ -4,13 +4,14 @@ import { BookOpen, Copy, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import LoadingScreen from "@/components/LoadingScreen";
 import { supabase } from "@/lib/supabase";
 
 type Mode = "choose" | "create" | "join";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, profileReady, refreshProfile } = useAuth();
 
   const [mode, setMode] = useState<Mode>("choose");
   const [name, setName] = useState("");
@@ -21,9 +22,10 @@ export default function OnboardingPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-    if (!loading && profile?.couple_id) router.replace("/dashboard");
-  }, [loading, user, profile, router]);
+    if (!profileReady) return;
+    if (!user) router.replace("/login");
+    if (profile?.couple_id) router.replace("/dashboard");
+  }, [profileReady, user, profile, router]);
 
   async function createCouple(e: React.FormEvent) {
     e.preventDefault();
@@ -80,8 +82,12 @@ export default function OnboardingPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (loading || !user) {
-    return <main className="flex min-h-screen items-center justify-center">Loading...</main>;
+  if (!profileReady) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <LoadingScreen message="Redirecting to login..." />;
   }
 
   if (generatedCode) {
