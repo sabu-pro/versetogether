@@ -14,6 +14,10 @@ export async function savePushSubscription(subscription: PushSubscription, userA
 
     const subscriptionPayload = subscription.toJSON ? subscription.toJSON() : subscription;
     const endpoint = subscriptionPayload.endpoint;
+    const keys =
+      "keys" in subscriptionPayload && subscriptionPayload.keys
+        ? subscriptionPayload.keys
+        : {};
 
     if (!endpoint) {
       throw new Error("Unable to save push subscription: missing endpoint.");
@@ -33,8 +37,10 @@ export async function savePushSubscription(subscription: PushSubscription, userA
       user_id: userId,
       endpoint,
       subscription: subscriptionPayload,
+      p256dh: keys.p256dh || null,
+      auth: keys.auth || null,
       user_agent: userAgent || "",
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     });
 
     if (insertError) {
@@ -50,17 +56,18 @@ export async function savePushSubscription(subscription: PushSubscription, userA
 
 export async function sendPushNotification(userId: string, title: string, message: string, url = "/dashboard") {
   try {
+    console.log("[push] calling /api/send-push", { targetUserId: userId, title, url });
     const response = await fetch("/api/send-push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, title, message, url })
+      body: JSON.stringify({ userId, title, message, url }),
     });
 
     const data = await response.json().catch(() => ({}));
-    console.log("Push send response", { status: response.status, data });
+    console.log("[push] /api/send-push response", { status: response.status, data });
     return data;
   } catch (error) {
-    console.error("Push notification failed", error);
-    return { ok: false, error };
+    console.error("[push] notification request failed", { targetUserId: userId, error });
+    return { ok: false, targetUserId: userId, subscriptionsFound: 0, sent: 0, failed: 0, errors: [String(error)] };
   }
 }

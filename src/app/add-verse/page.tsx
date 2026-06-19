@@ -55,25 +55,31 @@ export default function AddVersePage() {
       return;
     }
 
-    if (partner) {
+    if (partner && partner.id !== profile.id) {
       await supabase.from("app_notifications").insert({
         user_id: partner.id,
         title: `${profile.name} shared today’s Bible verse`,
         message: "Please read and write your reflection.",
-        link: `/reflection/${verse.id}`
+        link: `/reflection/${verse.id}`,
       });
 
       try {
+        console.log("[add-verse] sending push to partner", { partnerId: partner.id, coupleId: couple.id });
         const pushResponse = await sendPushNotification(
           partner.id,
           `${profile.name} shared today’s Bible verse`,
           "Please read and write your reflection.",
           `/reflection/${verse.id}`
         );
-        console.log("Push send response from add-verse", pushResponse);
+        console.log("[add-verse] send-push response", { partnerId: partner.id, pushResponse });
       } catch (pushError) {
-        console.error("Push send failed from add-verse", pushError);
+        console.error("[add-verse] push send failed", { partnerId: partner.id, pushError });
       }
+    } else {
+      console.warn("[add-verse] no partner available for push notification", {
+        profileId: profile.id,
+        coupleId: couple.id,
+      });
     }
 
     setBusy(false);

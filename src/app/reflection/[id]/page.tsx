@@ -59,19 +59,28 @@ export default function ReflectionPage() {
       reaction: reaction.toLowerCase()
     });
 
-    if (!error && partner) {
+    if (!error && partner && partner.id !== profile.id) {
       await supabase.from("app_notifications").insert({
         user_id: partner.id,
         title: `${profile.name} completed today’s reflection`,
         message: "Your partner has read and reflected on today’s verse.",
-        link: `/reflection/${verseId}`
+        link: `/reflection/${verseId}`,
       });
-      await sendPushNotification(
-        partner.id,
-        `${profile.name} completed today’s reflection`,
-        "Your partner has read and reflected on today’s verse.",
-        `/reflection/${verseId}`
-      );
+
+      try {
+        console.log("[reflection] sending push to partner", { partnerId: partner.id });
+        const pushResponse = await sendPushNotification(
+          partner.id,
+          `${profile.name} completed today’s reflection`,
+          "Your partner has read and reflected on today’s verse.",
+          `/reflection/${verseId}`
+        );
+        console.log("[reflection] send-push response", { partnerId: partner.id, pushResponse });
+      } catch (pushError) {
+        console.error("[reflection] push send failed", { partnerId: partner.id, pushError });
+      }
+    } else if (!error && !partner) {
+      console.warn("[reflection] no partner available for push notification", { profileId: profile.id });
     }
 
     setBusy(false);

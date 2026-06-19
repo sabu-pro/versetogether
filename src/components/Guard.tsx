@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import LoadingScreen from "./LoadingScreen";
 
 export default function Guard({ children }: { children: React.ReactNode }) {
   const { user, needsOnboarding, profileReady } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!profileReady) return;
@@ -18,14 +17,22 @@ export default function Guard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (needsOnboarding && pathname !== "/onboarding") {
+    if (needsOnboarding) {
       router.replace("/onboarding");
     }
-  }, [profileReady, user, needsOnboarding, pathname, router]);
+  }, [profileReady, user, needsOnboarding, router]);
 
-  if (!profileReady) return <LoadingScreen />;
-  if (!user) return <LoadingScreen message="Redirecting to login..." />;
-  if (needsOnboarding) return <LoadingScreen message="Setting up your space..." />;
+  if (!profileReady) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <LoadingScreen message="Redirecting to login..." />;
+  }
+
+  if (needsOnboarding) {
+    return <LoadingScreen message="Setting up your space..." />;
+  }
 
   return <>{children}</>;
 }

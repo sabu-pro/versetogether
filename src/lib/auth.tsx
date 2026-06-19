@@ -1,9 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { Couple, Profile } from "@/types";
+
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 10000;
+const SESSION_RETRY_DELAY_MS = 350;
 
 type AuthContextType = {
   session: Session | null;
@@ -34,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const bootstrapCompleteRef = useRef(false);
 
   const clearCoupleState = useCallback(() => {
     setProfile(null);
@@ -47,11 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfileLoading(true);
 
     try {
-      const { data: current } = await supabase
+      const { data: current, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .maybeSingle();
+
+      if (profileError) {
+        console.error("[auth] profile fetch failed", profileError);
+        clearCoupleState();
+        return;
+      }
 
       const currentProfile = (current as Profile) || null;
       setProfile(currentProfile);
@@ -64,14 +74,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const [{ data: coupleData }, { data: coupleProfiles }] = await Promise.all([
-        supabase.from("couples").select("*").eq("id", currentProfile.couple_id).maybeSingle(),
-        supabase
-          .from("profiles")
-          .select("*")
-          .eq("couple_id", currentProfile.couple_id)
-          .order("partner_order"),
-      ]);
+      const [{ data: coupleData, error: coupleError }, { data: coupleProfiles, error: membersError }] =
+        await Promise.all([
+          supabase.from("couples").select("*").eq("id", currentProfile.couple_id).maybeSingle(),
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("couple_id", currentProfile.couple_id)
+            .order("partner_order"),
+        ]);
+
+      if (coupleError || membersError) {
+        console.error("[auth] couple data fetch failed", coupleError || membersError);
+        setPartner(null);
+        setCouple(null);
+        setProfiles([]);
+        setInviteCode(null);
+        return;
+      }
 
       const members = (coupleProfiles || []) as Profile[];
       setCouple((coupleData as Couple) || null);
@@ -79,22 +99,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPartner(members.find((p) => p.id !== userId) || null);
 
       if (members.length < 2) {
-        const { data: code } = await supabase.rpc("get_active_invite_code");
-        setInviteCode(typeof code === "string" ? code : null);
+        const { data: code, error: codeError } = await supabase.rpc("get_active_invite_code");
+        if (codeError) {
+          console.error("[auth] invite code fetch failed", codeError);
+          setInviteCode(null);
+        } else {
+          setInviteCode(typeof code === "string" ? code : null);
+        }
       } else {
         setInviteCode(null);
       }
+    } catch (error) {
+      console.error("[auth] unexpected profile load error", error);
+      clearCoupleState();
     } finally {
       setProfileLoading(false);
     }
-  }, []);
+  }, [clearCoupleState]);
 
-  useEffect(() => {
-    let active = true;
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      if (!active) return;
-
+  const applySession = useCallback(
+    async (nextSession: Session | null) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -103,15 +127,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         clearCoupleState();
       }
+    },
+    [clearCoupleState, loadProfile]
+  );
 
-      if (active) setInitialized(true);
+  useEffect(() => {
+    let active = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const finishBootstrap = () => {
+      if (!active || bootstrapCompleteRef.current) return;
+      bootstrapCompleteRef.current = true;
+      setInitialized(true);
+    };
+
+    async function bootstrap() {
+      try {
+        let { data: { session: initialSession } } = await supabase.auth.getSession();
+
+        if (!initialSession && active) {
+          await new Promise((resolve) => setTimeout(resolve, SESSION_RETRY_DELAY_MS));
+          ({ data: { session: initialSession } } = await supabase.auth.getSession());
+        }
+
+        if (!active) return;
+        await applySession(initialSession);
+      } catch (error) {
+        console.error("[auth] bootstrap failed", error);
+        if (active) clearCoupleState();
+      } finally {
+        finishBootstrap();
+      }
+    }
+
+    timeoutId = setTimeout(() => {
+      console.warn("[auth] bootstrap timeout reached, releasing loading state");
+      finishBootstrap();
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+    bootstrap();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      if (!active) return;
+
+      if (event === "INITIAL_SESSION") {
+        return;
+      }
+
+      if (event === "TOKEN_REFRESHED") {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+        return;
+      }
+
+      await applySession(nextSession);
     });
 
     return () => {
       active = false;
+      if (timeoutId) clearTimeout(timeoutId);
       listener.subscription.unsubscribe();
     };
-  }, [clearCoupleState, loadProfile]);
+  }, [applySession, clearCoupleState]);
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -128,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const profileReady = initialized && !profileLoading;
-  const loading = !initialized || profileLoading;
+  const loading = !profileReady;
   const needsOnboarding = useMemo(
     () => profileReady && Boolean(user && !profile?.couple_id),
     [profileReady, user, profile?.couple_id]
