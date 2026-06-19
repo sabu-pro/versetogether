@@ -14,10 +14,6 @@ export async function savePushSubscription(subscription: PushSubscription, userA
 
     const subscriptionPayload = subscription.toJSON ? subscription.toJSON() : subscription;
     const endpoint = subscriptionPayload.endpoint;
-    const keys =
-      "keys" in subscriptionPayload && subscriptionPayload.keys
-        ? subscriptionPayload.keys
-        : {};
 
     if (!endpoint) {
       throw new Error("Unable to save push subscription: missing endpoint.");
@@ -37,8 +33,6 @@ export async function savePushSubscription(subscription: PushSubscription, userA
       user_id: userId,
       endpoint,
       subscription: subscriptionPayload,
-      p256dh: keys.p256dh || null,
-      auth: keys.auth || null,
       user_agent: userAgent || "",
       updated_at: new Date().toISOString(),
     });

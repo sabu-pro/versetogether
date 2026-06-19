@@ -11,8 +11,6 @@ type PushRow = {
   id: string;
   subscription?: SubscriptionJson | string | null;
   endpoint?: string | null;
-  p256dh?: string | null;
-  auth?: string | null;
 };
 
 export type PushSendResult = {
@@ -56,8 +54,8 @@ function parseSubscriptionValue(value: SubscriptionJson | string | null | undefi
 function toPushSubscription(row: PushRow): webpush.PushSubscription | null {
   const parsed = parseSubscriptionValue(row.subscription);
   const endpoint = parsed?.endpoint || row.endpoint || null;
-  const p256dh = parsed?.keys?.p256dh || row.p256dh || null;
-  const auth = parsed?.keys?.auth || row.auth || null;
+  const p256dh = parsed?.keys?.p256dh || null;
+  const auth = parsed?.keys?.auth || null;
 
   if (!endpoint || !p256dh || !auth) {
     return null;
@@ -78,7 +76,7 @@ export async function sendPushToUser(
 ): Promise<PushSendResult> {
   const { data: subscriptions, error } = await adminClient
     .from("push_subscriptions")
-    .select("id, subscription, endpoint, p256dh, auth")
+    .select("id, subscription, endpoint")
     .eq("user_id", userId);
 
   if (error) {

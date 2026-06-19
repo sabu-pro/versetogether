@@ -17,21 +17,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing subscription details" }, { status: 400 });
   }
 
-  const { error: upsertError } = await supabase
+  const { error: deleteError } = await supabase
     .from("push_subscriptions")
-    .upsert(
-      {
-        user_id: user.id,
-        endpoint,
-        subscription,
-        user_agent: body?.user_agent || "",
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "endpoint" }
-    );
+    .delete()
+    .eq("user_id", user.id)
+    .eq("endpoint", endpoint);
 
-  if (upsertError) {
-    return NextResponse.json({ error: upsertError.message }, { status: 500 });
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  }
+
+  const { error: insertError } = await supabase.from("push_subscriptions").insert({
+    user_id: user.id,
+    endpoint,
+    subscription,
+    user_agent: body?.user_agent || "",
+    updated_at: new Date().toISOString(),
+  });
+
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
