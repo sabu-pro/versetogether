@@ -112,6 +112,8 @@ export default function DashboardPage() {
       <Header
         title={greetingWithName(profile?.name)}
         subtitle={prettyDate(new Date())}
+        avatarUrl={profile?.avatar_url}
+        avatarName={profile?.name}
       />
 
       {pageLoading ? (

@@ -4,6 +4,7 @@ import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
+import ProfilePhotoSection from "@/components/ProfilePhotoSection";
 import { useAuth } from "@/lib/auth";
 import { savePushSubscription } from "@/lib/push";
 
@@ -146,6 +147,8 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <Header title="Settings" subtitle="Manage profile, partner, and mobile setup." />
+
+      <ProfilePhotoSection />
 
       <section className="soft-card mb-5">
         <p className="badge-pill">Your profile</p>

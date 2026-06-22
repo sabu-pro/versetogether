@@ -22,6 +22,7 @@ export type Profile = {
   name: string;
   partner_order: number;
   couple_id: string | null;
+  avatar_url: string | null;
   created_at: string;
 };
 
