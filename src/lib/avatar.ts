@@ -54,12 +54,12 @@ export async function compressProfilePhoto(file: File): Promise<Blob> {
 }
 
 async function removeAvatarFiles(userId: string) {
-  const folderPath = userId;
-  const { data: files } = await supabase.storage.from(BUCKET).list(folderPath);
+  const path = avatarStoragePath(userId);
 
-  if (files?.length) {
-    const paths = files.map((file) => `${folderPath}/${file.name}`);
-    await supabase.storage.from(BUCKET).remove(paths);
+  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+
+  if (error) {
+    console.warn("Could not remove old avatar:", error);
   }
 }
 
@@ -67,13 +67,16 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
   const compressed = await compressProfilePhoto(file);
   const path = avatarStoragePath(userId);
 
-  await removeAvatarFiles(userId);
+console.log("UPLOAD USER ID:", userId);
+console.log("UPLOAD PATH:", path);
 
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, compressed, {
-    cacheControl: "3600",
-    upsert: true,
-    contentType: "image/webp",
-  });
+const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, compressed, {
+  cacheControl: "3600",
+  upsert: false,
+  contentType: "image/webp",
+});
+
+console.log("UPLOAD ERROR:", uploadError);
 
   if (uploadError) {
     throw new Error(uploadError.message || "Unable to upload profile photo.");
