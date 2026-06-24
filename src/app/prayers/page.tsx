@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Heart, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import Header from "@/components/Header";
@@ -9,10 +9,19 @@ import { supabase } from "@/lib/supabase";
 import { PrayerRequest, ThoughtTestimony } from "@/types";
 import { prettyDate } from "@/lib/utils";
 
+type ThoughtReaction = {
+  id: string;
+  thought_id: string;
+  user_id: string;
+  reaction: string;
+  created_at: string;
+};
+
 export default function PrayersPage() {
   const { profile, couple } = useAuth();
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [thoughts, setThoughts] = useState<ThoughtTestimony[]>([]);
+  const [reactions, setReactions] = useState<ThoughtReaction[]>([]);
   const [text, setText] = useState("");
   const [thoughtText, setThoughtText] = useState("");
   const [showThoughtForm, setShowThoughtForm] = useState(false);
@@ -21,19 +30,22 @@ export default function PrayersPage() {
   const [error, setError] = useState("");
 
   async function load() {
-    const [{ data: prayerData }, { data: thoughtData }] = await Promise.all([
-      supabase
-        .from("prayer_requests")
-        .select("*, profile:profiles(*)")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("thoughts_testimonies")
-        .select("*, profile:profiles(*)")
-        .order("created_at", { ascending: false }),
-    ]);
+    const [{ data: prayerData }, { data: thoughtData }, { data: reactionData }] =
+      await Promise.all([
+        supabase
+          .from("prayer_requests")
+          .select("*, profile:profiles(*)")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("thoughts_testimonies")
+          .select("*, profile:profiles(*)")
+          .order("created_at", { ascending: false }),
+        supabase.from("thought_reactions").select("*"),
+      ]);
 
     setPrayers((prayerData || []) as PrayerRequest[]);
     setThoughts((thoughtData || []) as ThoughtTestimony[]);
+    setReactions((reactionData || []) as ThoughtReaction[]);
   }
 
   useEffect(() => {
@@ -43,11 +55,13 @@ export default function PrayersPage() {
   async function addPrayer(e: React.FormEvent) {
     e.preventDefault();
     if (!profile || !couple) return;
+
     await supabase.from("prayer_requests").insert({
       couple_id: couple.id,
       user_id: profile.id,
       request_text: text,
     });
+
     setText("");
     load();
   }
@@ -57,6 +71,7 @@ export default function PrayersPage() {
       .from("prayer_requests")
       .update({ is_answered: true, answered_at: new Date().toISOString() })
       .eq("id", id);
+
     load();
   }
 
@@ -65,6 +80,7 @@ export default function PrayersPage() {
     if (!profile || !couple) return;
 
     setError("");
+
     const { error: insertError } = await supabase.from("thoughts_testimonies").insert({
       couple_id: couple.id,
       user_id: profile.id,
@@ -90,6 +106,7 @@ export default function PrayersPage() {
     if (!profile) return;
 
     setError("");
+
     const { error: updateError } = await supabase
       .from("thoughts_testimonies")
       .update({
@@ -111,10 +128,12 @@ export default function PrayersPage() {
 
   async function deleteThought(thoughtId: string) {
     if (!profile) return;
+
     const confirmed = window.confirm("Delete this thought or testimony?");
     if (!confirmed) return;
 
     setError("");
+
     const { error: deleteError } = await supabase
       .from("thoughts_testimonies")
       .delete()
@@ -124,6 +143,41 @@ export default function PrayersPage() {
     if (deleteError) {
       setError(deleteError.message);
       return;
+    }
+
+    load();
+  }
+
+  async function toggleThoughtLove(thoughtId: string) {
+    if (!profile) return;
+
+    const existing = reactions.find(
+      (reaction) => reaction.thought_id === thoughtId && reaction.user_id === profile.id
+    );
+
+    setError("");
+
+    if (existing) {
+      const { error: deleteError } = await supabase
+        .from("thought_reactions")
+        .delete()
+        .eq("id", existing.id);
+
+      if (deleteError) {
+        setError(deleteError.message);
+        return;
+      }
+    } else {
+      const { error: insertError } = await supabase.from("thought_reactions").insert({
+        thought_id: thoughtId,
+        user_id: profile.id,
+        reaction: "love",
+      });
+
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
     }
 
     load();
@@ -145,15 +199,11 @@ export default function PrayersPage() {
       </form>
 
       <section className="card mb-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="badge-pill">Thoughts & Testimonies</p>
-            <h2 className="mt-2 text-xl font-bold text-sage-900">Share encouragement</h2>
-            <p className="mt-1 text-sm text-sage-600">
-              Add a short thought, testimony, or spiritual note for your partner.
-            </p>
-          </div>
-        </div>
+        <p className="badge-pill">Thoughts & Testimonies</p>
+        <h2 className="mt-2 text-xl font-bold text-sage-900">Share encouragement</h2>
+        <p className="mt-1 text-sm text-sage-600">
+          Add a short thought, testimony, or spiritual note for your partner.
+        </p>
 
         {!showThoughtForm ? (
           <button
@@ -198,6 +248,12 @@ export default function PrayersPage() {
           {thoughts.map((thought) => {
             const isAuthor = profile?.id === thought.user_id;
             const isEditing = editingThoughtId === thought.id;
+            const lovedByMe = reactions.some(
+              (reaction) => reaction.thought_id === thought.id && reaction.user_id === profile?.id
+            );
+            const loveCount = reactions.filter(
+              (reaction) => reaction.thought_id === thought.id
+            ).length;
 
             return (
               <article key={thought.id} className="card">
@@ -206,6 +262,7 @@ export default function PrayersPage() {
                     <p className="text-sm text-sage-500">
                       {thought.profile?.name} • {prettyDate(thought.created_at)}
                     </p>
+
                     {isEditing ? (
                       <div className="mt-3 space-y-3">
                         <textarea
@@ -235,9 +292,35 @@ export default function PrayersPage() {
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-2 whitespace-pre-line text-sage-700">{thought.content}</p>
+                      <>
+                        <p className="mt-2 whitespace-pre-line text-sage-700">
+                          {thought.content}
+                        </p>
+
+                        <div className="mt-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleThoughtLove(thought.id)}
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm transition ${
+                              lovedByMe
+                                ? "border-pink-300 bg-pink-100 text-[#111111]"
+                                : "border-pink-200 bg-white text-[#111111] hover:bg-pink-50"
+                            }`}
+                          >
+                            <Heart size={16} fill={lovedByMe ? "currentColor" : "none"} />
+                            {lovedByMe ? "Loved" : "Love"}
+                          </button>
+
+                          {loveCount > 0 && (
+                            <span className="text-sm text-sage-500">
+                              {loveCount} {loveCount === 1 ? "love" : "loves"}
+                            </span>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
+
                   {isAuthor && !isEditing && (
                     <div className="flex items-center gap-2">
                       <button
@@ -273,7 +356,9 @@ export default function PrayersPage() {
             <p className="text-sm text-sage-500">
               {p.profile?.name} • {prettyDate(p.created_at)}
             </p>
-            <p className={`mt-2 ${p.is_answered ? "line-through text-sage-500" : ""}`}>{p.request_text}</p>
+            <p className={`mt-2 ${p.is_answered ? "line-through text-sage-500" : ""}`}>
+              {p.request_text}
+            </p>
             {p.is_answered ? (
               <p className="mt-3 text-sm font-semibold text-sage-700">
                 Answered {p.answered_at ? prettyDate(p.answered_at) : ""}
