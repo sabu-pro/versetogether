@@ -57,12 +57,18 @@ export default function PrayersPage() {
     if (!profile || !couple) return;
 
     await supabase.from("prayer_requests").insert({
-      couple_id: couple.id,
-      user_id: profile.id,
-      request_text: text,
-    });
+  couple_id: couple.id,
+  user_id: profile.id,
+  request_text: text,
+});
 
-    setText("");
+await notifyPartner(
+  "New prayer request 🙏",
+  `${profile.name || "Your partner"} shared a prayer request.`,
+  "/prayers"
+);
+
+setText("");
     load();
   }
 
@@ -88,11 +94,17 @@ export default function PrayersPage() {
     });
 
     if (insertError) {
-      setError(insertError.message);
-      return;
-    }
+  setError(insertError.message);
+  return;
+}
 
-    setThoughtText("");
+await notifyPartner(
+  "New thought shared 💌",
+  `${profile.name || "Your partner"} shared a thought or testimony.`,
+  "/prayers"
+);
+
+setThoughtText("");
     setShowThoughtForm(false);
     load();
   }
@@ -147,41 +159,87 @@ export default function PrayersPage() {
 
     load();
   }
+  async function notifyPartner(title: string, message: string, url = "/prayers") {
+  if (!profile || !couple) return;
 
-  async function toggleThoughtLove(thoughtId: string) {
-    if (!profile) return;
+  const { data: partner, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("couple_id", couple.id)
+    .neq("id", profile.id)
+    .single();
 
-    const existing = reactions.find(
-      (reaction) => reaction.thought_id === thoughtId && reaction.user_id === profile.id
-    );
+  if (error || !partner?.id) {
+    console.error("Could not find partner for push:", error);
+    return;
+  }
 
-    setError("");
+  await fetch("/api/send-push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: partner.id,
+      title,
+      message,
+      url,
+    }),
+  }).catch((pushError) => {
+    console.error("Push notification failed:", pushError);
+  });
+}
 
-    if (existing) {
-      const { error: deleteError } = await supabase
-        .from("thought_reactions")
-        .delete()
-        .eq("id", existing.id);
+ async function toggleThoughtLove(thoughtId: string) {
+  if (!profile) return;
 
-      if (deleteError) {
-        setError(deleteError.message);
-        return;
-      }
-    } else {
-      const { error: insertError } = await supabase.from("thought_reactions").insert({
-        thought_id: thoughtId,
-        user_id: profile.id,
-        reaction: "love",
-      });
+  const thought = thoughts.find((item) => item.id === thoughtId);
+  if (!thought) return;
 
-      if (insertError) {
-        setError(insertError.message);
-        return;
-      }
+  const existing = reactions.find(
+    (reaction) => reaction.thought_id === thoughtId && reaction.user_id === profile.id
+  );
+
+  setError("");
+
+  if (existing) {
+    const { error: deleteError } = await supabase
+      .from("thought_reactions")
+      .delete()
+      .eq("id", existing.id);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+  } else {
+    const { error: insertError } = await supabase.from("thought_reactions").insert({
+      thought_id: thoughtId,
+      user_id: profile.id,
+      reaction: "love",
+    });
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
     }
 
-    load();
+    if (thought.user_id !== profile.id) {
+      await fetch("/api/send-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: thought.user_id,
+          title: "VerseTogether ❤️",
+          message: `${profile.name || "Your partner"} loved your thought.`,
+          url: "/prayers",
+        }),
+      }).catch((pushError) => {
+        console.error("Failed to send thought reaction push:", pushError);
+      });
+    }
   }
+
+  load();
+}
 
   return (
     <AppShell>
