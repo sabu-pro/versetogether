@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { initWebPush, isAuthorizedCronRequest, sendPushToUser } from "@/lib/push-server";
 import { isWeekend, responsibleOrder } from "@/lib/utils";
 import { Profile } from "@/types";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,9 +81,11 @@ console.log("[morning-reminder] orderToday", orderToday);
   const notified = results.filter((item) => item.sent > 0).length;
 
   return NextResponse.json({
-    ok: true,
-    notified,
-    couplesChecked: byCouple.size,
-    results,
-  });
+  ok: true,
+  orderToday,
+  profilesFound: profiles?.length,
+  couplesChecked: byCouple.size,
+  notified,
+  results,
+});
 }
