@@ -39,6 +39,8 @@ export async function GET(request: Request) {
   }
 
   const orderToday = responsibleOrder();
+console.log("[morning-reminder] profiles found", profiles?.length);
+console.log("[morning-reminder] orderToday", orderToday);
   const byCouple = new Map<string, Profile[]>();
 
   for (const row of (profiles || []) as Profile[]) {
@@ -47,6 +49,7 @@ export async function GET(request: Request) {
     members.push(row);
     byCouple.set(row.couple_id, members);
   }
+  console.log("[morning-reminder] couples checked", byCouple.size);
 
   const title = "VerseTogether";
   const message = "Good morning, today is your turn to share God's Word.";
@@ -55,6 +58,11 @@ export async function GET(request: Request) {
   for (const [coupleId, members] of Array.from(byCouple.entries())) {
     const responsible = members.find((member) => member.partner_order === orderToday);
     if (!responsible) continue;
+    console.log("[morning-reminder] sending to", {
+  coupleId,
+  userId: responsible.id,
+  name: responsible.name,
+});
 
     const pushResult = await sendPushToUser(
       adminClient,
@@ -63,6 +71,7 @@ export async function GET(request: Request) {
       message,
       "/add-verse"
     );
+    console.log("[morning-reminder] pushResult", pushResult);
 
     results.push({ coupleId, userId: responsible.id, sent: pushResult.sent });
   }
