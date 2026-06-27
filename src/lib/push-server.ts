@@ -138,14 +138,11 @@ export async function sendPushToUser(
 
 export function isAuthorizedCronRequest(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret) {
+    return request.headers.get("x-vercel-cron") === "1" || process.env.NODE_ENV !== "production";
+  }
+
   const authHeader = request.headers.get("authorization");
-  const vercelCronHeader = request.headers.get("x-vercel-cron");
-
-  console.log("[cron-auth-debug]", {
-    hasCronSecret: Boolean(cronSecret),
-    authHeader,
-    vercelCronHeader,
-  });
-
-  return true;
+  return authHeader === `Bearer ${cronSecret}`;
 }
