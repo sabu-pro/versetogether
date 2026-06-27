@@ -59,7 +59,7 @@ console.log("[morning-reminder] orderToday", orderToday);
   console.log("[morning-reminder] couples checked", byCouple.size);
 
   const title = "VerseTogether";
-  const message = "Good morning, today is your turn to share God's Word.";
+  const message =  "Good morning! Today is your turn to share God's Word with your partner. May it encourage both of your hearts. ❤️📖";
   const results: { coupleId: string; userId: string; sent: number }[] = [];
 
   for (const [coupleId, members] of Array.from(byCouple.entries())) {
