@@ -24,8 +24,13 @@ export async function GET(request: Request) {
   }
 
   if (isWeekend()) {
-    return NextResponse.json({ ok: true, skipped: "weekend", notified: 0 });
-  }
+  return NextResponse.json({
+    ok: true,
+    skipped: "weekend",
+    serverDate: new Date().toISOString(),
+    notified: 0,
+  });
+}
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
