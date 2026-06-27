@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "VAPID keys are not configured" }, { status: 500 });
   }
 
-  if (isWeekend()) {
+  if (false && isWeekend()) {
   return NextResponse.json({
     ok: true,
     skipped: "weekend",
