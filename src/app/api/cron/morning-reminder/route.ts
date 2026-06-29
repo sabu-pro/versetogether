@@ -79,6 +79,13 @@ console.log("[morning-reminder] orderToday", orderToday);
       "/add-verse"
     );
     console.log("[morning-reminder] pushResult", pushResult);
+    if (pushResult.sent > 0) {
+  await adminClient.from("morning_reminder_log").insert({
+    couple_id: coupleId,
+    user_id: responsible.id,
+    reminder_date: new Date().toISOString().slice(0, 10),
+  });
+}
 
     results.push({ coupleId, userId: responsible.id, sent: pushResult.sent });
   }
