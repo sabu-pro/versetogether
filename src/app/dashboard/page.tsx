@@ -117,10 +117,12 @@ export default function DashboardPage() {
       />
 
       {pageLoading ? (
-        <section className="card text-center text-sage-600">Loading today&apos;s verse...</section>
-      ) : (
-        <>
-      <section className="soft-card mb-5">
+  <section className="card text-center text-sage-600">Loading today&apos;s verse...</section>
+) : (
+  <>
+  <DashboardAnalytics />
+
+  <section className="soft-card mb-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="badge-pill">Today’s responsibility</p>
