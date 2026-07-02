@@ -1,5 +1,5 @@
 "use client";
-
+import DashboardAnalytics from "@/components/DashboardAnalytics";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
