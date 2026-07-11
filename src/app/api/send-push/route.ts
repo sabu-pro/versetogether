@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { initWebPush, sendPushToUser } from "@/lib/push-server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -9,6 +10,13 @@ export async function POST(request: Request) {
   let targetUserId: string | null = null;
 
   try {
+    // Auth check: require a valid session
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ ok: false, errors: ["Unauthorized"] }, { status: 401 });
+    }
+
     const body = await request.json().catch(() => null);
     if (!body) {
       return NextResponse.json(
@@ -71,6 +79,23 @@ export async function POST(request: Request) {
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    // BOLA guard: requester and target must share the same couple_id
+    const { data: profiles } = await adminClient
+      .from("profiles")
+      .select("id, couple_id")
+      .in("id", [user.id, userId]);
+
+    const requesterProfile = profiles?.find((p) => p.id === user.id);
+    const targetProfile = profiles?.find((p) => p.id === userId);
+
+    if (
+      !requesterProfile?.couple_id ||
+      !targetProfile?.couple_id ||
+      requesterProfile.couple_id !== targetProfile.couple_id
+    ) {
+      return NextResponse.json({ ok: false, errors: ["Forbidden"] }, { status: 403 });
+    }
 
     const result = await sendPushToUser(adminClient, userId, title, message, url);
 
