@@ -218,7 +218,10 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
-  <DashboardAnalytics />
+
+      <div className="mt-6">
+        <DashboardAnalytics />
+      </div>
         </>
       )}
     </AppShell>
