@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -14,6 +14,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [passwordReset, setPasswordReset] = useState(false);
+
+  useEffect(() => {
+    setPasswordReset(new URLSearchParams(window.location.search).get("passwordReset") === "success");
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,9 +57,11 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={submit} className="card space-y-4">
+        {passwordReset && <p role="status" className="rounded-2xl bg-sage-100 p-3 text-sm text-sage-800">Password updated. Log in with your new password.</p>}
         {error && <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
         <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Link href="/forgot-password" className="block text-sm font-semibold text-sage-800 underline">Forgot password?</Link>
         <button className="btn btn-primary w-full" disabled={busy}>
           {busy ? "Logging in..." : "Login"}
         </button>
