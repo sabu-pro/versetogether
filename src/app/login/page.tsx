@@ -53,7 +53,7 @@ export default function LoginPage() {
           <BookOpen className="text-sage-700" size={38} />
         </div>
         <h1 className="text-4xl font-bold text-sage-900">VerseTogether</h1>
-        <p className="mt-2 text-sage-600">Share God’s Word.Pray together.Grow together.</p>
+        <p className="mt-2 text-sage-600">Share God’s Word. Pray together. Grow together.</p>
       </div>
 
       <form onSubmit={submit} className="card space-y-4">
@@ -62,7 +62,7 @@ export default function LoginPage() {
         <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input className="input" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <Link href="/forgot-password" className="block text-sm font-semibold text-sage-800 underline">Forgot password?</Link>
-        <button className="btn btn-primary w-full" disabled={busy}>
+        <button className="btn w-full border-rose-800 bg-rose-800 !text-white hover:bg-sage-800" disabled={busy}>
           {busy ? "Logging in..." : "Login"}
         </button>
       </form>

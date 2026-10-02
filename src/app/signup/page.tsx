@@ -56,7 +56,7 @@ export default function SignupPage() {
           minLength={6}
           required
         />
-        <button className="btn btn-primary w-full" disabled={busy}>
+        <button className="btn w-full border-rose-800 bg-rose-800 !text-white hover:bg-sage-800" disabled={busy}>
           {busy ? "Creating account..." : "Sign up"}
         </button>
       </form>
